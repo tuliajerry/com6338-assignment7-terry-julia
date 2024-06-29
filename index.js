@@ -1,5 +1,3 @@
-
-
 var questionsArr = [
   {
     question: 'Who was the first person to walk on the moon?',
