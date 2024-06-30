@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initializeGame();
 });
+
 function startQuiz() {
   let currentQuestionIndex = 0;
   let score = 0;
@@ -150,4 +151,3 @@ function startQuiz() {
 
   displayQuestion();
 }
-
