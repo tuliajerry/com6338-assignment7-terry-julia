@@ -51,86 +51,103 @@ const questionsArr = [
   }
 ];
 
-let score = parseInt(localStorage.getItem('previous-score')) || 0;
-
-function renderStartButtonOrScore() {
+document.addEventListener('DOMContentLoaded', () => {
   const quizDiv = document.getElementById('quiz');
-  if (score === 0) {
-    quizDiv.innerHTML = '<button id="start-quiz">Start Quiz!</button>';
-  } else {
-    quizDiv.innerHTML = `<p>Previous Score: ${score}%</p><button id="start-quiz">Start Quiz!</button>`;
-  }
-}
 
-function renderQuestion(questionObj, index) {
-  const quizDiv = document.getElementById('quiz');
-  quizDiv.innerHTML = `
-    <p>${questionObj.question}</p>
-    <div id="options">
-      ${questionObj.options.map(option => `<button>${option}</button>`).join('')}
-    </div>
-    <p id="timer">30</p>
-  `;
+  function initializeGame() {
+    quizDiv.innerHTML = '';
 
-  const options = quizDiv.querySelectorAll('#options button');
-  options.forEach(option => {
-    option.addEventListener('click', () => {
-      checkAnswer(option.textContent, questionObj.answer);
-      clearInterval(timerInterval);
-      setTimeout(nextQuestion, 1000);
-    });
-  });
-
-  startTimer();
-}
-
-function startTimer() {
-  let timeLeft = 30;
-  const timerElement = document.getElementById('timer');
-  timerElement.textContent = timeLeft;
-
-  const timerInterval = setInterval(() => {
-    timeLeft--;
-    timerElement.textContent = timeLeft;
-    if (timeLeft === 0) {
-      clearInterval(timerInterval);
-      setTimeout(nextQuestion, 1000);
+    const previousScore = localStorage.getItem('previous-score');
+    if (previousScore) {
+      const scoreParagraph = document.createElement('p');
+      scoreParagraph.textContent = `Previous Score: ${previousScore}%`;
+      quizDiv.appendChild(scoreParagraph);
     }
-  }, 1000);
-}
 
-function checkAnswer(selectedOption, correctAnswer) {
-  if (selectedOption === correctAnswer) {
-    score++;
+    const startButton = document.createElement('button');
+    startButton.id = 'start-quiz';
+    startButton.textContent = 'Start Quiz!';
+    startButton.addEventListener('click', startQuiz);
+    quizDiv.appendChild(startButton);
   }
-}
 
-function nextQuestion() {
-  const currentIndex = questionsArr.findIndex(q => !q.answered);
-  if (currentIndex < questionsArr.length - 1) {
-    renderQuestion(questionsArr[currentIndex + 1]);
-    questionsArr[currentIndex].answered = true;
-  } else {
-    endQuiz();
-  }
-}
-
-function endQuiz() {
-  const quizDiv = document.getElementById('quiz');
-  quizDiv.innerHTML = `
-    <p>Final Score: ${Math.round((score / questionsArr.length) * 100)}%</p>
-    <button id="start-quiz">Start Quiz!</button>
-  `;
-  localStorage.setItem('previous-score', score);
-  score = 0;
-}
-
-document.addEventListener('DOMContentLoaded', renderStartButtonOrScore);
-
-document.getElementById('quiz').addEventListener('click', function(event) {
-  if (event.target.id === 'start-quiz') {
-    score = 0;
-    localStorage.removeItem('previous-score');
-    renderQuestion(questionsArr[0]);
-  }
+  initializeGame();
 });
+function startQuiz() {
+  let currentQuestionIndex = 0;
+  let score = 0;
+  const totalQuestions = questionsArr.length;
+  const quizDiv = document.getElementById('quiz');
+
+  function displayQuestion() {
+    if (currentQuestionIndex >= totalQuestions) {
+      endQuiz();
+      return;
+    }
+
+    quizDiv.innerHTML = '';
+
+    const questionObj = questionsArr[currentQuestionIndex];
+    const questionParagraph = document.createElement('p');
+    questionParagraph.textContent = questionObj.question;
+    quizDiv.appendChild(questionParagraph);
+
+    const optionsDiv = document.createElement('div');
+    questionObj.options.forEach(option => {
+      const optionButton = document.createElement('button');
+      optionButton.textContent = option;
+      optionButton.addEventListener('click', () => handleAnswer(option));
+      optionsDiv.appendChild(optionButton);
+    });
+    quizDiv.appendChild(optionsDiv);
+
+    const timerParagraph = document.createElement('p');
+    timerParagraph.id = 'timer';
+    quizDiv.appendChild(timerParagraph);
+
+    startTimer();
+  }
+
+  function startTimer() {
+    let timeRemaining = 30;
+    const timerParagraph = document.getElementById('timer');
+    timerParagraph.textContent = timeRemaining;
+
+    const intervalId = setInterval(() => {
+      timeRemaining--;
+      timerParagraph.textContent = timeRemaining;
+      if (timeRemaining <= 0) {
+        clearInterval(intervalId);
+        handleAnswer(null);
+      }
+    }, 1000);
+  }
+
+  function handleAnswer(selectedOption) {
+    const currentQuestion = questionsArr[currentQuestionIndex];
+    if (selectedOption === currentQuestion.answer) {
+      score++;
+    }
+    currentQuestionIndex++;
+    displayQuestion();
+  }
+
+  function endQuiz() {
+    const percentageScore = Math.round((score / totalQuestions) * 100);
+    localStorage.setItem('previous-score', percentageScore);
+
+    quizDiv.innerHTML = '';
+    const scoreParagraph = document.createElement('p');
+    scoreParagraph.textContent = `Score: ${percentageScore}%`;
+    quizDiv.appendChild(scoreParagraph);
+
+    const startButton = document.createElement('button');
+    startButton.id = 'start-quiz';
+    startButton.textContent = 'Start Quiz!';
+    startButton.addEventListener('click', startQuiz);
+    quizDiv.appendChild(startButton);
+  }
+
+  displayQuestion();
+}
+
